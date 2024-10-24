@@ -2,6 +2,8 @@
 
 This repository contains the implementation of a **6G Communication System Simulation** with detailed channel models, resource allocation strategies, mobility, interference management, and security features. Below is a visual representation of the system flow.
 
+![image](https://github.com/user-attachments/assets/ac5f1a35-4b48-469f-9345-22f822bbaa89)
+
 ### Overview
 
 - **User Input:** Channel selection through the command line.

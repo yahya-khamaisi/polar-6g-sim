@@ -22,7 +22,7 @@ This repository contains the implementation of a **6G Communication System Simul
 
 1. Clone the repository:
    ```bash
-   git clone <repository_url>
+   git clone [<repository_url>](https://github.com/dr-yahya/6G-For-I5.git)
    cd 6G-FOR-I5
    ```
 2. Run the simulation:

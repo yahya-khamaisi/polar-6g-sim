@@ -1,11 +1,23 @@
-import numpy as np
-import matplotlib.pyplot as plt
+"""6G channel simulation: polar-coded transmission over multiple channel
+models with network slicing, resource allocation, mobility, interference,
+security and energy-efficiency effects layered on top.
+
+Run interactively:
+    python sim.py
+
+Run non-interactively, e.g. for scripting/CI:
+    python sim.py --channel THz --no-plot
+"""
+
+import argparse
 import logging
 import sys
+
+import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from polarcodes import PolarCode, Construct, Encode, Decode
 
-# Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger()
 
@@ -209,7 +221,7 @@ def calculate_ber(original_bits, decoded_bits):
     return ber
 
 # Visualization of Signals and BER vs SNR
-def visualize_results(original_bits, modulated_signal, received_signal, decoded_signal, ber_values, snr_values, channel_name):
+def visualize_results(original_bits, modulated_signal, received_signal, decoded_signal, ber_values, snr_values, channel_name, *, show=True, save_path=None):
     fig, axs = plt.subplots(2, 2, figsize=(14, 10))
     
     # Plot Original Bits
@@ -234,10 +246,16 @@ def visualize_results(original_bits, modulated_signal, received_signal, decoded_
     axs[1, 1].grid(True)
     
     plt.tight_layout()
-    plt.show()
+    if save_path:
+        fig.savefig(save_path, dpi=150)
+        logger.info(f"Saved plot to {save_path}")
+    if show:
+        plt.show()
+    else:
+        plt.close(fig)
 
 # Main simulation function to compute BER over SNR for the chosen channel
-def simulate_ber_for_channel(channel_name):
+def simulate_ber_for_channel(channel_name, *, show_plot=True, save_plot=None):
     if channel_name not in channel_models:
         logger.error(f"Invalid channel name: {channel_name}")
         sys.exit(1)
@@ -310,14 +328,33 @@ def simulate_ber_for_channel(channel_name):
     print(results_df)
     
     # Visualize the results
-    visualize_results(original_bits, coded_bits, received_signal, myPC.message_received, ber_values, snr_values, channel_name)
+    visualize_results(
+        original_bits, coded_bits, received_signal, myPC.message_received,
+        ber_values, snr_values, channel_name, show=show_plot, save_path=save_plot,
+    )
+    return results_df
 
-# Command-line interface to choose the channel and run the simulation
-def main():
+def parse_args():
+    parser = argparse.ArgumentParser(description="6G channel simulation with polar coding.")
+    parser.add_argument(
+        "--channel", choices=list(channel_models.keys()), default=None,
+        help="Channel model to simulate. If omitted, you'll be prompted interactively.",
+    )
+    parser.add_argument(
+        "--no-plot", action="store_true",
+        help="Skip displaying the results plot (useful for headless/CI runs).",
+    )
+    parser.add_argument(
+        "--save-plot", metavar="PATH", default=None,
+        help="Save the results plot to PATH instead of (or in addition to) showing it.",
+    )
+    return parser.parse_args()
+
+def prompt_for_channel():
     print("Available channels:")
     for i, channel in enumerate(channel_models.keys()):
         print(f"{i + 1}. {channel}")
-    
+
     try:
         choice = int(input("Enter the number corresponding to the channel you want to simulate: "))
         if choice < 1 or choice > len(channel_models):
@@ -325,9 +362,17 @@ def main():
     except ValueError as e:
         print(e)
         sys.exit(1)
-    
-    channel_name = list(channel_models.keys())[choice - 1]
-    simulate_ber_for_channel(channel_name)
+
+    return list(channel_models.keys())[choice - 1]
+
+def main():
+    args = parse_args()
+    channel_name = args.channel or prompt_for_channel()
+    simulate_ber_for_channel(
+        channel_name,
+        show_plot=not args.no_plot,
+        save_plot=args.save_plot,
+    )
 
 if __name__ == "__main__":
     main()
